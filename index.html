@@ -125,11 +125,43 @@ const db = getFirestore(app);
 const studentsCol = collection(db, "students");
 
 window.addEventListener("error", (e) => {
-  console.error("Global error:", e.error || e.message);
+  const msg = (e.error && e.error.message) || e.message || "unknown error";
+  console.error("Global error:", msg);
+  const loadEl = document.getElementById("loading");
+  if(loadEl && loadEl.style.display !== "none"){
+    loadEl.innerHTML = `<div style="text-align:center;padding:0 24px;">
+      <div>Kuch gadbad ho gayi:</div>
+      <div style="font-family:monospace;font-size:13px;margin-top:10px;color:#A5322B;">${msg}</div>
+    </div>`;
+  }
 });
 window.addEventListener("unhandledrejection", (e) => {
-  console.error("Unhandled promise rejection:", e.reason);
+  const msg = (e.reason && e.reason.message) || String(e.reason) || "unknown error";
+  console.error("Unhandled promise rejection:", msg);
+  const loadEl = document.getElementById("loading");
+  if(loadEl && loadEl.style.display !== "none"){
+    loadEl.innerHTML = `<div style="text-align:center;padding:0 24px;">
+      <div>Kuch gadbad ho gayi:</div>
+      <div style="font-family:monospace;font-size:13px;margin-top:10px;color:#A5322B;">${msg}</div>
+    </div>`;
+  }
 });
+
+// Safety-net: if nothing has loaded within 15s, show a diagnostic message
+// instead of spinning forever with no explanation.
+setTimeout(() => {
+  const loadEl = document.getElementById("loading");
+  if(loadEl && loadEl.style.display !== "none" && loadEl.textContent.includes("khul raha")){
+    loadEl.innerHTML = `<div style="text-align:center;padding:0 24px;">
+      <div>Firebase se connect hone mein zyada time lag raha hai.</div>
+      <div style="font-size:13px;margin-top:10px;color:#5B6472;">
+        Ho sakta hai Firestore database ya rules mein koi issue ho.<br/>
+        Neeche button dabakar dobara try karein.
+      </div>
+      <button onclick="location.reload()" style="margin-top:16px;background:#1F2A3C;color:#F6F1E4;border:none;border-radius:6px;padding:10px 20px;font-size:14px;">Dobara try karein</button>
+    </div>`;
+  }
+}, 15000);
 
 /* ---------------- Data constants ---------------- */
 
@@ -210,57 +242,4 @@ const SEED_UKG_RAW = [
   { name: "Prashant Yadav", father: "Sunil Yadav", mother: "Archana Yadav", dob: "2021-01-06", address: "Rah Kalan", mobile1: "9450844631", mobile2: "8953396492" },
   { name: "Divyanshu", father: "Ajay Kumar", mother: "Resham Chauhan", dob: "2019-08-28", address: "Sirsi", mobile1: "8957041681", mobile2: "6393695249" },
   { name: "Sankalp Mishra", father: "Pawan Kr Mishra", address: "Kanhaipur", mobile1: "9415490735" },
-  { name: "Neeraj", father: "Ravishankar", address: "Dadi", mobile1: "8546053883" },
-  { name: "Ansh", father: "Vipin Kumar", mother: "Pinki", address: "Gadbad" }
-];
-
-function buildSeedStudents(){
-  return SEED_UKG_RAW.map((s, i) => ({
-    id: "ukg_seed_" + String(i).padStart(3, "0"),
-    class: "UKG",
-    name: s.name || "",
-    father: s.father || "",
-    mother: s.mother || "",
-    dob: s.dob || "",
-    aadhar: s.aadhar || "",
-    address: s.address || "",
-    mobile1: s.mobile1 || "",
-    mobile2: s.mobile2 || "",
-    category: s.category || "",
-    admission: "",
-    development: "",
-    backDues: s.backDues || "",
-    transport: !!s.transport,
-    months: blankMonths()
-  }));
-}
-
-// Runs once ever, tracked by a flag document in Firestore (survives page
-// reloads / interrupted sessions / low battery pauses). Uses deterministic
-// doc IDs so re-attempting after an interruption never creates duplicates.
-async function ensureSeeded(){
-  const flagRef = doc(db, "meta", "seedStatus");
-  let already = false;
-  try{
-    const snap = await getDoc(flagRef);
-    already = snap.exists() && snap.data()?.seeded;
-  }catch(e){ /* ignore, will just try seeding */ }
-  if(already) return;
-
-  const seed = buildSeedStudents();
-  for(const s of seed){
-    const {id, ...data} = s;
-    await setDoc(doc(db, "students", id), data);
-  }
-  await setDoc(flagRef, {seeded: true, seededAt: Date.now(), count: seed.length});
-}
-
-function money(v){
-  if(v === "" || v === null || v === undefined) return "—";
-  const n = Number(v);
-  if(Number.isNaN(n)) return v;
-  return "₹" + n.toLocaleString("en-IN");
-}
-
-function initials(name){
-  return (name||"?").split(" ").filter(Boolean).slice(0,2).map(w=
+  { name: "Neeraj", father: "Ravishankar
