@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Diagnostic Test</title>
+<style>
+  body{font-family:monospace;font-size:15px;padding:20px;background:#fff;color:#000;}
+  .line{margin-bottom:10px;padding:8px;border-radius:6px;}
+  .pending{background:#eee;}
+  .ok{background:#d4f4dd;color:#0a5c2e;}
+  .fail{background:#fddede;color:#a11;}
+</style>
+</head>
+<body>
+<h3>Firebase Connection Test</h3>
+<div id="s0" class="line pending">0. Page HTML loaded — OK (aap ye dekh rahe hain, matlab ye kaam kiya)</div>
+<div id="s1" class="line pending">1. JS script tag chalu hua...</div>
+<div id="s2" class="line pending">2. Firebase App module import...</div>
+<div id="s3" class="line pending">3. Firebase Firestore module import...</div>
+<div id="s4" class="line pending">4. Firebase app initialize...</div>
+<div id="s5" class="line pending">5. Firestore se connect (test read)...</div>
+
+<script>
+document.getElementById("s1").className = "line ok";
+document.getElementById("s1").textContent = "1. JS script chalu hua — OK";
+</script>
+
+<script type="module">
+try {
+  document.getElementById("s2").textContent = "2. Firebase App module import ho raha hai...";
+  const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
+  document.getElementById("s2").className = "line ok";
+  document.getElementById("s2").textContent = "2. Firebase App module import — OK";
+
+  document.getElementById("s3").textContent = "3. Firestore module import ho raha hai...";
+  const { getFirestore, collection, getDocs } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+  document.getElementById("s3").className = "line ok";
+  document.getElementById("s3").textContent = "3. Firestore module import — OK";
+
+  document.getElementById("s4").textContent = "4. Firebase initialize ho raha hai...";
+  const firebaseConfig = {
+    apiKey: "AIzaSyBfUEwGuWnzFCdkeaXOh3aq9zId_eMpBVc",
+    authDomain: "bsps-school.firebaseapp.com",
+    projectId: "bsps-school",
+    storageBucket: "bsps-school.firebasestorage.app",
+    messagingSenderId: "1034996058212",
+    appId: "1:1034996058212:web:43ae3c905cd8af8780f771"
+  };
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  document.getElementById("s4").className = "line ok";
+  document.getElementById("s4").textContent = "4. Firebase initialize — OK";
+
+  document.getElementById("s5").textContent = "5. Firestore se data read ho raha hai (timeout 10s)...";
+  const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT after 10s")), 10000));
+  const readPromise = getDocs(collection(db, "students"));
+  const snap = await Promise.race([readPromise, timeoutPromise]);
+  document.getElementById("s5").className = "line ok";
+  document.getElementById("s5").textContent = "5. Firestore read — OK! Documents found: " + snap.size;
+
+} catch (err) {
+  const failedStep = ["s2","s3","s4","s5"].find(id => document.getElementById(id).className === "line pending");
+  if (failedStep) {
+    document.getElementById(failedStep).className = "line fail";
+    document.getElementById(failedStep).textContent += " — FAILED: " + (err.message || err);
+  }
+  const div = document.createElement("div");
+  div.className = "line fail";
+  div.textContent = "ERROR DETAILS: " + (err.stack || err.message || String(err));
+  document.body.appendChild(div);
+}
+</script>
+</body>
+</html>
